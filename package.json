@@ -1,0 +1,26 @@
+{
+  "name": "your-final-grade-api",
+  "version": "0.0.1",
+  "description": "the api for your-final-grade",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/JCharante/your-final-grade-api.git"
+  },
+  "author": "jcharante <git@jcharante.com>",
+  "license": "UNLICENSED",
+  "bugs": {
+    "url": "https://github.com/JCharante/your-final-grade-api/issues"
+  },
+  "homepage": "https://github.com/JCharante/your-final-grade-api#readme",
+  "dependencies": {
+    "body-parser": "^1.19.0",
+    "dotenv": "^8.1.0",
+    "express": "^4.17.1",
+    "mongodb": "^3.3.2"
+  }
+}
