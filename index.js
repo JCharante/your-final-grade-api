@@ -17,6 +17,15 @@ exports.handler = (event, context, callback) => {
 };
 
 async function handleRequest(req, res, spare) {
+    res.set({
+        'Access-Control-Allow-Origin': ['*'],
+        'Access-Control-Allow-Methods': 'GET,PUT,POST,DELETE',
+        'Access-Control-Allow-Headers': 'Content-Type',
+    });
+    if (req.method === 'OPTIONS') {
+        res.status(200).send();
+        return;
+    }
     let body = req.body;
     console.log('Received request %o', body);
     
@@ -25,7 +34,7 @@ async function handleRequest(req, res, spare) {
     let userDoc;
     
     // enforce a session key for non-login, non-signup, or non-ping requests
-    if (requestType !== "ping" || requestType !== "login" || requestType !== "signup") {
+    if (requestType !== "ping" && requestType !== "login" && requestType !== "signup") {
         const sessionKey = body.sessionKey;
         if (!sessionKey) {
             res.status(403).send('You must include a session key in your request');
@@ -37,21 +46,25 @@ async function handleRequest(req, res, spare) {
             userDoc = await mongoHandler.getUserFromSessionKey(sessionKey);
         } catch (err) {
             res.status(400).send(err.toString())
+            return
         }
     }
     
     try {
         const username = body.username;
         const password = body.password;
+        let ret;
+        let sessionKey = null;
         switch (requestType) {
             case 'ping':
                 res.status(200).send('pong');
                 break;
-            case 'getUserDetails':
-                res.status(200).send(JSON.stringify({
+            case 'userDetails':
+                ret = {
                     username: userDoc.username,
-                    displayName: userDoc.diplayName
-                }))
+                    displayName: userDoc.displayName
+                };
+                res.status(200).send(JSON.stringify(ret))
                 break;
             case 'signup':
                 const displayName = body.displayName;
@@ -61,9 +74,9 @@ async function handleRequest(req, res, spare) {
                     res.status(400).send(error.toString());
                     return;
                 }
-                res.status(200).send(JSON.stringify({
-                    sessionKey: await mongoHandler.createSession(userDoc.username)
-                }))
+                ret = await mongoHandler.createSession(userDoc._id)
+                sessionKey = ret.sessionKey;
+                res.status(200).send(JSON.stringify({ sessionKey }));
                 break;
             case 'login':
                 try {
@@ -72,9 +85,9 @@ async function handleRequest(req, res, spare) {
                     res.status(403).send(error.toString());
                     return;
                 }
-                res.status(200).send(JSON.stringify({
-                    sessionKey: await mongoHandler.createSession(userDoc.username)
-                }));
+                ret = await mongoHandler.createSession(userDoc._id)
+                sessionKey = ret.sessionKey;
+                res.status(200).send(JSON.stringify({ sessionKey }));
                 break;
             default:
                 res.status(400).send(`Unsupported requestType "${requestType}"`);
@@ -86,5 +99,6 @@ async function handleRequest(req, res, spare) {
 }
 
 app.post('/', handleRequest);
+app.options('/', handleRequest);
 
-app.listen(3000)
+app.listen(3001)

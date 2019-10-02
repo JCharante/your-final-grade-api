@@ -49,7 +49,7 @@ module.exports = {
         console.log('Connected to MongoDB');
         const db = client.db('your-final-grade');
         const sessionsCollection = db.collection('sessions');
-        const ret = await sessionsCollection.insertOne({ user: userId })
+        const ret = await sessionsCollection.insertOne({ user: ObjectId(userId) })
         await client.close();
         return { sessionKey: ret.insertedId.toString(), userId: userId.toString() };
     },
