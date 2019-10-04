@@ -26,7 +26,6 @@ module.exports = {
     },
     createUser: async function(username, password, displayName) {
         username = username.toLowerCase();
-        let saltRounds = Math.round(Math.random()*100);
         const client = await new MongoClient(atlasURL, { useNewUrlParser: true });
         await client.connect();
         console.log('Connected to MongoDB');
@@ -37,18 +36,13 @@ module.exports = {
         if (doc) {
             throw new Error('Username taken');
         }
-        bcrypt.genSalt(saltRounds, function(err, salt) {
-            bcrypt.hash(myPlaintextPassword, salt, function(err, hash) {
-                // Store hash in your password DB.
-
-                await usersCollection.insertOne({
-                    username,
-                    password: hash,
-                    displayName
-                })
-            });
-        });
-        const userDocument = await usersCollection.findOne({ username, password, displayName });
+        let hash = bcrypt.hashSync(password, 10);
+        await usersCollection.insertOne({
+            username,
+            password: hash,
+            displayName
+        })
+        const userDocument = await usersCollection.findOne({ username, displayName });
         await client.close();
         return userDocument;
     },
@@ -74,10 +68,7 @@ module.exports = {
         if (!userDocument) {
             throw new Error('Invalid Credentials');
         }
-        let ret = false;
-        bcrypt.compare(password, userDocument.password, function(err, res) {
-            ret = res;
-        });
+        let ret = bcrypt.compareSync(password, userDocument.password);
         if (ret) {
             return userDocument;
         } else {
