@@ -1,6 +1,7 @@
 const MongoClient = require('mongodb').MongoClient;
 const ObjectId = require('mongodb').ObjectID;
 const atlasURL = process.env.ATLAS_URL;
+const bcrypt = require('bcrypt');
 
 module.exports = {
     getUserFromSessionKey: async function(sessionKey) {
@@ -25,6 +26,7 @@ module.exports = {
     },
     createUser: async function(username, password, displayName) {
         username = username.toLowerCase();
+        let saltRounds = Math.round(Math.random()*100);
         const client = await new MongoClient(atlasURL, { useNewUrlParser: true });
         await client.connect();
         console.log('Connected to MongoDB');
@@ -35,11 +37,17 @@ module.exports = {
         if (doc) {
             throw new Error('Username taken');
         }
-        await usersCollection.insertOne({
-            username,
-            password,
-            displayName
-        })
+        bcrypt.genSalt(saltRounds, function(err, salt) {
+            bcrypt.hash(myPlaintextPassword, salt, function(err, hash) {
+                // Store hash in your password DB.
+
+                await usersCollection.insertOne({
+                    username,
+                    password: hash,
+                    displayName
+                })
+            });
+        });
         const userDocument = await usersCollection.findOne({ username, password, displayName });
         await client.close();
         return userDocument;
@@ -66,7 +74,11 @@ module.exports = {
         if (!userDocument) {
             throw new Error('Invalid Credentials');
         }
-        if (userDocument.password === password) {
+        let ret = false;
+        bcrypt.compare(password, userDocument.password, function(err, res) {
+            ret = res;
+        });
+        if (ret) {
             return userDocument;
         } else {
             throw new Error('Invalid Credentials');
