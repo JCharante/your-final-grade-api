@@ -24,6 +24,7 @@ module.exports = {
         return userDocument;
     },
     createUser: async function(username, password, displayName) {
+        username = username.toLowerCase();
         const client = await new MongoClient(atlasURL, { useNewUrlParser: true });
         await client.connect();
         console.log('Connected to MongoDB');
@@ -54,6 +55,7 @@ module.exports = {
         return { sessionKey: ret.insertedId.toString(), userId: userId.toString() };
     },
     verifyPassword: async function(username, password) {
+        username = username.toLowerCase();
         const client = await new MongoClient(atlasURL, {useNewUrlParser: true});
         await client.connect();
         console.log('Connected to MongoDB');
