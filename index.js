@@ -56,41 +56,55 @@ async function handleRequest(req, res, spare) {
         let ret;
         let sessionKey = null;
         switch (requestType) {
-            case 'ping':
-                res.status(200).send('pong');
-                break;
-            case 'userDetails':
-                ret = {
-                    username: userDoc.username,
-                    displayName: userDoc.displayName
-                };
-                res.status(200).send(JSON.stringify(ret))
-                break;
-            case 'signup':
-                const displayName = body.displayName;
-                try {
-                    userDoc = await mongoHandler.createUser(username, password, displayName);
-                } catch (error) {
-                    res.status(400).send(error.toString());
-                    return;
-                }
-                ret = await mongoHandler.createSession(userDoc._id)
-                sessionKey = ret.sessionKey;
-                res.status(200).send(JSON.stringify({ sessionKey }));
-                break;
-            case 'login':
-                try {
-                    userDoc = await mongoHandler.verifyPassword(username, password);
-                } catch (error) {
-                    res.status(403).send(error.toString());
-                    return;
-                }
-                ret = await mongoHandler.createSession(userDoc._id)
-                sessionKey = ret.sessionKey;
-                res.status(200).send(JSON.stringify({ sessionKey }));
-                break;
-            default:
-                res.status(400).send(`Unsupported requestType "${requestType}"`);
+        case 'updateStore':
+            const newDataStore = body.dataStore;
+            if (typeof newDataStore !== typeof {}) {
+                res.status(400).send('must include a new data store in request');
+                return;
+            }
+            await mongoHandler.setUserDataStore(userDoc._id, newDataStore);
+            res.status(200).send();
+            break;
+        case 'getStore':
+            res.status(200).send(JSON.stringify({
+                dataStore: userDoc.dataStore,
+            }));
+            break;
+        case 'ping':
+            res.status(200).send('pong');
+            break;
+        case 'userDetails':
+            ret = {
+                username: userDoc.username,
+                displayName: userDoc.displayName
+            };
+            res.status(200).send(JSON.stringify(ret))
+            break;
+        case 'signup':
+            const displayName = body.displayName;
+            try {
+                userDoc = await mongoHandler.createUser(username, password, displayName);
+            } catch (error) {
+                res.status(400).send(error.toString());
+                return;
+            }
+            ret = await mongoHandler.createSession(userDoc._id)
+            sessionKey = ret.sessionKey;
+            res.status(200).send(JSON.stringify({ sessionKey }));
+            break;
+        case 'login':
+            try {
+                userDoc = await mongoHandler.verifyPassword(username, password);
+            } catch (error) {
+                res.status(403).send(error.toString());
+                return;
+            }
+            ret = await mongoHandler.createSession(userDoc._id)
+            sessionKey = ret.sessionKey;
+            res.status(200).send(JSON.stringify({ sessionKey }));
+            break;
+        default:
+            res.status(400).send(`Unsupported requestType "${requestType}"`);
         }
     } catch (error) {
         console.error('Error while handling request: %o', error);

@@ -3,6 +3,12 @@ const ObjectId = require('mongodb').ObjectID;
 const atlasURL = process.env.ATLAS_URL;
 const bcrypt = require('bcrypt');
 
+async function getConnectedClient() {
+    const client = await new MongoClient(atlasURL, { useNewUrlParser: true });
+    await client.connect();
+    return client;
+}
+
 module.exports = {
     getUserFromSessionKey: async function(sessionKey) {
         const client = await new MongoClient(atlasURL, { useNewUrlParser: true });
@@ -40,7 +46,8 @@ module.exports = {
         await usersCollection.insertOne({
             username,
             password: hash,
-            displayName
+            displayName,
+            dataStore: {},
         })
         const userDocument = await usersCollection.findOne({ username, displayName });
         await client.close();
@@ -75,4 +82,20 @@ module.exports = {
             throw new Error('Invalid Credentials');
         }
     },
+    setUserDataStore: async function(userObjectId, newDataStore) {
+        const client = await getConnectedClient();
+        const db = client.db('your-final-grade');
+        const usersCollection = db.collection('users');
+        await usersCollection.updateOne(
+            {
+                _id: userObjectId,
+            },
+            {
+                '$set': {
+                    dataStore: newDataStore
+                }
+            }
+        )
+        await client.close();
+    }
 }
